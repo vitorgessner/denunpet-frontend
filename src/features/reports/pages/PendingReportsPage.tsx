@@ -35,8 +35,6 @@ export function PendingReportsPage() {
           aria-label="Pesquisar denúncias"
 
         />
-
-        <button type="button" className="btn">Ordenar</button>
       </form>
 
 

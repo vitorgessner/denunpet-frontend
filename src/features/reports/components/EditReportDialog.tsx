@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import type { User } from '@/features/auth/types';
 import type { Report } from '../types/report.types';
+import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
 
 
 
@@ -21,7 +22,7 @@ type reportSchemaProps = {
     user?: User
 }
 
-export function EditReportDialog({ report, setIsOpen, fetchReports }: { report: Report, setIsOpen: React.Dispatch<React.SetStateAction<boolean>>, fetchReports: () => Promise<void> }) {
+export function EditReportDialog({ report, setIsOpen, fetchReports }: { report: Report, setIsOpen: React.Dispatch<React.SetStateAction<boolean>>, fetchReports?: () => Promise<void> }) {
 
 
 
@@ -36,12 +37,8 @@ export function EditReportDialog({ report, setIsOpen, fetchReports }: { report: 
     })
     const [loading, setLoading] = useState(false)
     const [display, setDisplay] = useState(false);
-    const [hasImage, setHasImage] = useState(true);
-    const [hasLoc, setHasLoc] = useState(true);
+    const [, setHasImage] = useState(true);
     const { user } = useAuth()
-
-
-
 
 
     async function handleEditReport(data: reportSchemaProps) {
@@ -49,13 +46,7 @@ export function EditReportDialog({ report, setIsOpen, fetchReports }: { report: 
         formData.append("description", data.description)
         formData.append("details", data.details)
         formData.append("ocurrenceDate", new Date(data.ocurrenceDate).toISOString())
-
-        if (data.location) {
-            formData.append("location", data.location)
-            setHasLoc(true);
-        } else {
-            setHasLoc(false);
-        }
+        formData.append("location", report.location)
 
         if (data.midia) {
             for (let i = 0; i < data.midia.length; i++) {
@@ -69,18 +60,20 @@ export function EditReportDialog({ report, setIsOpen, fetchReports }: { report: 
 
         if (user) formData.append("user", JSON.stringify(user))
 
-        if (data.location) {
-            try {
-                setLoading(true);
-                await api.put(`/api/report/${report.id}`, formData)
-                setLoading(false)
-                setDisplay(true);
-                setIsOpen(false);
+
+        try {
+            setLoading(true);
+            await api.put(`/api/report/${report.id}`, formData)
+            setLoading(false)
+            setDisplay(true);
+            setIsOpen(false);
+            if (fetchReports) {
                 await fetchReports();
-            } catch (error) {
-                console.log(error)
             }
+        } catch (error) {
+            console.log(error)
         }
+
     }
 
     return (
@@ -120,11 +113,19 @@ export function EditReportDialog({ report, setIsOpen, fetchReports }: { report: 
 
                 </div>
 
-                <div className="pt-4 grid grid-cols-4">
-                    <Label htmlFor="location">Localização</Label>
-                    <Input className="col-span-3" id="location" {...register('location')} />
+                <div className="pt-4 grid grid-cols-1">
+                    {(<MapContainer center={[...report.location.split(', ')]} zoom={13} scrollWheelZoom={true} style={{ height: 400 }}>
+                        <TileLayer
+                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        />
+                        <Marker position={[...report.location.split(', ')]}>
+                            <Popup>
+                                A pretty CSS3 popup. <br /> Easily customizable.
+                            </Popup>
+                        </Marker>
+                    </MapContainer>)}
                 </div>
-                {!hasLoc && <p className='text-right text-l mt-1 text-red-600'>Localização é obrigatória</p>}
 
                 <div className="pt-4 grid grid-cols-4">
                     <Label htmlFor="midia">Fotos/vídeos</Label>

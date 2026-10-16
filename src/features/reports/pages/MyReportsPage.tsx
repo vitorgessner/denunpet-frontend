@@ -3,10 +3,11 @@ import { CreateReportDialogButton } from '../components/CreateReportDialogButton
 import { ReportCard } from '../components/ReportCard';
 import { useMyReports } from '../hooks/useMyReports';
 import { UserType } from '@/features/auth/types';
+import 'leaflet/dist/leaflet.css';
 
 export function MyReportsPage() {
   const { reports, loading, error, refetch } = useMyReports()
-  const { user } = useAuth();
+  const { user } = useAuth()
 
   if (loading) {
     return (
@@ -26,6 +27,7 @@ export function MyReportsPage() {
 
   return (
     <div className="page-content">
+
       <h1>Minhas denúncias</h1>
 
       {/* Search + actions */}
@@ -37,14 +39,12 @@ export function MyReportsPage() {
           aria-label="Pesquisar minhas denúncias"
 
         />
-
-        <button type="button" className="btn">Ordenar</button>
       </form>
 
 
 
       <div className="sectionLabel">Minhas denúncias registradas</div>
-      {user?.type == UserType.USER && <CreateReportDialogButton fetchReports={refetch}/>}
+      {user?.type == UserType.USER && <CreateReportDialogButton fetchReports={refetch} />}
 
       {/* List */}
       <section className={`list mt-3  block  ${reports && reports.length > 0 ? "md:grid md:grid-cols-2" : ""}`} aria-label="Lista das minhas denúncias">
@@ -56,6 +56,7 @@ export function MyReportsPage() {
           </div>
         }
       </section>
+
     </div>
   );
 }

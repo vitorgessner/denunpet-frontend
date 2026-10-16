@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
-import { BadgeAlert, ClipboardList, Dog, PawPrint } from 'lucide-react';
+import { BadgeAlert, ClipboardList } from 'lucide-react';
 import { useAuth } from "@/features/auth/contexts/AuthContext";
 import { UserType } from "@/features/auth/types";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ export function DefaultLayout() {
             {/* Topbar */}
             <div className="topbar">
                 <div className="flex w-full gap-3 justify-between">
-                    <b className="py-2">Adopet</b>
+                    <b className="py-2">DenunPet</b>
 
                     <div className="flex gap-3">
                         {user
@@ -45,6 +45,7 @@ export function DefaultLayout() {
             </main>
 
             {/* Bottom Navigation */}
+<<<<<<< HEAD
             <nav className={`flex gap-2 justify-center items-center mb-3`} aria-label="Navegação principal">
                 <Link
                     to="/animals"
@@ -62,6 +63,11 @@ export function DefaultLayout() {
                         <Dog />
                     </Link>
                 )}
+=======
+            <div className="fixed bottom-0 left-0 w-full border-t bg-">
+                <nav className={`grid gap-2.5 py-2 px-4 ${user?.type == UserType.ONG ? 'grid-cols-2' : 'grid-cols-1'} 
+                `} aria-label="Navegação principal">
+>>>>>>> dba1d2c (Afunilando apenas para denúncias e implementando geolocalização)
                 {user?.type && (
                     <Link
                         to="/my-reports"

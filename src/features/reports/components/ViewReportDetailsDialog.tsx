@@ -5,6 +5,8 @@ import { Calendar, MapPin, User, FileText, Download } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { ReportStatusBadge } from './ReportStatusBadge';
 import type { Report } from '../types/report.types';
+import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
+import type { LatLngTuple } from 'leaflet';
 
 export function ViewReportDetailsDialog({ report }: { report: Report }) {
   if (!report) return null;
@@ -42,9 +44,16 @@ export function ViewReportDetailsDialog({ report }: { report: Report }) {
         <div className="bg-gray-50 p-4 rounded-lg space-y-3">
           <div className="flex items-start gap-3">
             <MapPin className="w-4 h-4 text-gray-500 mt-0.5" />
-            <div>
-              <p className="font-medium text-gray-900">Localização</p>
-              <p className="text-gray-600">{report.location}</p>
+            <div className='-ml-1'>
+              <p className="font-medium text-gray-900"></p>
+              {(<MapContainer center={[...report.location.split(', ')]} zoom={13} scrollWheelZoom={true} style={{ height: 400, width: 400 }}>
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <Marker position={[...report.location.split(', ')]}>
+                </Marker>
+              </MapContainer>)}
             </div>
           </div>
 

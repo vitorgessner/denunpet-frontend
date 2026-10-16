@@ -5,16 +5,13 @@ import { RegisterPage } from '@/features/auth/pages/RegisterPage';
 import { PublicRoute } from '@/features/auth/components/PublicRoute';
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
 import { UserType } from '@/features/auth/types';
-import { ListAnimalsPage } from '@/features/animals/pages/ListAnimalsPage';
-import { MyAnimalsPage } from '@/features/animals/pages/MyAnimalsPage';
-import { AnimalDetailsPage } from '@/features/animals/pages/AnimalDetailsPage';
 import { MyReportsPage } from '@/features/reports/pages/MyReportsPage';
 import { PendingReportsPage } from '@/features/reports/pages/PendingReportsPage';
 
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <Navigate to="/animals" replace />
+    element: <Navigate to="/my-reports" replace />
   },
   {
     element: <PublicRoute />,
@@ -24,25 +21,6 @@ const router = createBrowserRouter([
         children: [
           { path: "/login", element: <LoginPage /> },
           { path: "/register", element: <RegisterPage /> },
-        ],
-      },
-    ]
-  },
-  {
-    element: <DefaultLayout />,
-    children: [
-      { path: "/animals", element: <ListAnimalsPage /> },
-      { path: "/animals/:id", element: <AnimalDetailsPage /> },
-
-    ],
-  },
-  {
-    element: <ProtectedRoute userType={UserType.ONG} />,
-    children: [
-      {
-        element: <DefaultLayout />,
-        children: [
-          { path: "/my-animals", element: <MyAnimalsPage /> },
         ],
       },
     ]

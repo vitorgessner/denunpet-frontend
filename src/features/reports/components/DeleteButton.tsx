@@ -15,7 +15,7 @@ import { useState } from "react"
 
 
 
-export const DeleteButton = ({ id, fetchReports }: { id: number, fetchReports: () => Promise<void> }) => {
+export const DeleteButton = ({ id, fetchReports }: { id: number, fetchReports?: () => Promise<void> }) => {
     const [open, setOpen] = useState(false)
 
 
@@ -24,7 +24,9 @@ export const DeleteButton = ({ id, fetchReports }: { id: number, fetchReports: (
         try {
             await api.delete(`/api/report/${id}`)
             setOpen(false)
-            await fetchReports();
+            if (fetchReports) {
+                await fetchReports();
+            }
         } catch (error) {
             console.error(error)
         }

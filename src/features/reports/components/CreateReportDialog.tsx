@@ -1,5 +1,5 @@
 import { useForm } from 'react-hook-form';
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { api } from '@/lib/api';
 
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import type { User } from '@/features/auth/types';
 
-
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
 
 type reportSchemaProps = {
     description: string,
@@ -23,20 +23,30 @@ type reportSchemaProps = {
 export function CreateReportDialog({ setIsOpen, fetchReports }: { setIsOpen: React.Dispatch<React.SetStateAction<boolean>>, fetchReports: () => Promise<void> }) {
     const { register, handleSubmit, setValue } = useForm<reportSchemaProps>()
     const [loading, setLoading] = useState(false)
-    const [display, setDisplay] = useState(false);
+    const [, setDisplay] = useState(false);
     const [hasImage, setHasImage] = useState(true);
     const [hasLoc, setHasLoc] = useState(true);
+    const [coords, setCoords] = useState<null | number[]>(null);
     const { user } = useAuth()
 
+    useEffect(() => {
+        function getLocation() {
+            navigator.geolocation.getCurrentPosition(position => {
+                setCoords([position.coords.latitude, position.coords.longitude]);
+            })
 
+        }
+
+        getLocation();
+    }, [])
 
     async function handleCreateReport(data: reportSchemaProps) {
         const formData = new FormData()
         formData.append("description", data.description)
         formData.append("details", data.details)
         formData.append("ocurrenceDate", new Date(data.ocurrenceDate).toISOString())
-        if (data.location) {
-            formData.append("location", data.location)
+        if (coords) {
+            formData.append("location", coords.join(', '));
             setHasLoc(true);
         } else {
             setHasLoc(false);
@@ -53,7 +63,7 @@ export function CreateReportDialog({ setIsOpen, fetchReports }: { setIsOpen: Rea
 
         if (user) formData.append("user", JSON.stringify(user))
 
-        if (data.midia && data.location) {
+        if (data.midia && coords) {
             try {
                 setLoading(true)
                 await api.post("/api/report/register", formData)
@@ -90,10 +100,20 @@ export function CreateReportDialog({ setIsOpen, fetchReports }: { setIsOpen: Rea
                     <input className="col-span-3" type="date" id="ocurrenceDate" {...register("ocurrenceDate", { valueAsDate: true })} />
                 </div>
 
-                <div className="pt-4 grid grid-cols-4">
-                    <Label htmlFor="location">Localização</Label>
-                    <Input className="col-span-3" id="location" {...register('location')} />
+                <div className='pt-4 grid grid-cols-1'>
+                    {coords && (<MapContainer center={[coords[0], coords[1]]} zoom={13} scrollWheelZoom={true} style={{ height: 400 }}>
+                        <TileLayer
+                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        />
+                        <Marker position={[coords[0], coords[1]]}>
+                            <Popup>
+                                A pretty CSS3 popup. <br /> Easily customizable.
+                            </Popup>
+                        </Marker>
+                    </MapContainer>)}
                 </div>
+
                 {!hasLoc && <p className='text-right text-l mt-1 text-red-600'>Localização é obrigatória</p>}
 
                 <div className="pt-4 grid grid-cols-4">
