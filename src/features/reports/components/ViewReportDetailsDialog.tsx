@@ -1,25 +1,44 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
+import { DialogContent, DialogHeader } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Calendar, MapPin, User, FileText, Download } from 'lucide-react';
+import { Calendar, MapPin, User, FileText, MapPinCheck } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { ReportStatusBadge } from './ReportStatusBadge';
 import type { Report } from '../types/report.types';
-import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
-import type { LatLngTuple } from 'leaflet';
+import { MapContainer, Marker, TileLayer } from 'react-leaflet';
+import { useState } from 'react';
+import { api } from '@/lib/api';
+import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { UserType } from '@/features/auth/types';
 
-export function ViewReportDetailsDialog({ report }: { report: Report }) {
+export function ViewReportDetailsDialog({ report, fetchReports }: { report: Report, fetchReports?: () => Promise<void> }) {
+  const [statusComment, setStatusComment] = useState('');
+  const [statusCommentError, setStatusCommentError] = useState(false);
+  const [display] = useState(false);
+  const { user } = useAuth();
   if (!report) return null;
 
-  const handleDownload = (url: string, filename: string) => {
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+  const handleProgress = async (type: 'progress' | 'resolved' | 'unresolved') => {
+    if (!statusComment) {
+      setStatusCommentError(true);
+      return;
+    }
+    try {
+      const statusTypes = {
+        progress: 'IN_PROGRESS',
+        resolved: 'RESOLVED',
+        unresolved: 'UNRESOLVED',
+      }
+      await api.put(`/api/report/${report.id}/status`, { statusComment, status: statusTypes[type] })
+      setStatusCommentError(false);
+      if (fetchReports) {
+        await fetchReports()
+      }
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
+  const [lat, long] = report.location.split(', ');
 
   return (
     <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -46,16 +65,22 @@ export function ViewReportDetailsDialog({ report }: { report: Report }) {
             <MapPin className="w-4 h-4 text-gray-500 mt-0.5" />
             <div className='-ml-1'>
               <p className="font-medium text-gray-900"></p>
-              {(<MapContainer center={[...report.location.split(', ')]} zoom={13} scrollWheelZoom={true} style={{ height: 400, width: 400 }}>
+              {(<MapContainer center={[Number(lat), Number(long)]} zoom={13} scrollWheelZoom={true} style={{ height: 300, width: 400 }}>
                 <TileLayer
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
-                <Marker position={[...report.location.split(', ')]}>
+                <Marker position={[Number(lat), Number(long)]}>
                 </Marker>
               </MapContainer>)}
+
             </div>
           </div>
+
+          {report.address && <div className="flex items-start gap-3">
+            <MapPinCheck size={35} className='text-gray-500 mt-0.5' />
+            {report.address && <p className='flex'> Endereço: {report.address}</p>}
+          </div>}
 
           <div className="flex items-start gap-3">
             <Calendar className="w-4 h-4 text-gray-500 mt-0.5" />
@@ -69,7 +94,7 @@ export function ViewReportDetailsDialog({ report }: { report: Report }) {
             <User className="w-4 h-4 text-gray-500 mt-0.5" />
             <div>
               <p className="font-medium text-gray-900">Denunciante</p>
-              <p className="text-gray-600 text-sm">{report.user?.name || "Carregando..."}</p>
+              <p className="text-gray-600 text-sm">{!report.user ? "Anônimo" : report.user?.name || "Carregando..."}</p>
             </div>
           </div>
         </div>
@@ -87,41 +112,58 @@ export function ViewReportDetailsDialog({ report }: { report: Report }) {
           </div>
         </div>
 
-        {/* Mídias */}
-        {report.midia && report.midia.length > 0 && (
-          <div className="space-y-3">
-            <h4 className="font-medium text-gray-900">Mídias</h4>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {report.midia.map((media, index) => (
-                <div key={media.id} className="relative group">
-                  {media.type === 'image' ? (
-                    <img
-                      src={import.meta.env.VITE_API_URL + media.url}
-                      alt={`Mídia ${index + 1}`}
-                      className="w-full h-32 object-cover rounded-lg border"
-                    />
-                  ) : (
-                    <div className="w-full h-32 bg-gray-100 rounded-lg border flex items-center justify-center">
-                      <div className="text-center">
-                        <div className="text-2xl mb-1">🎥</div>
-                        <p className="text-xs text-gray-500">Vídeo</p>
-                      </div>
-                    </div>
-                  )}
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => handleDownload(media.url, `media-${index + 1}.${media.extension}`)}
-                  >
-                    <Download className="h-3 w-3" />
-                  </Button>
-                </div>
-              ))}
-            </div>
+        <div>
+          {!display && <h3 className='text-sm'>Mídias da denúncia</h3>}
+          <div className='flex gap-2 flex-wrap'>
+            {!display && report?.midia && report?.midia.map(item => item.type === "image" ?
+
+
+              <img key={item.id} src={`${import.meta.env.VITE_API_URL}${item.url}`} className='h-40 object-cover rounded col-span-1' /> :
+              <video controls={true} key={item.id} src={`${import.meta.env.VITE_API_URL}${item.url}`} className='h-30 object-cover rounded col-span-1' ></video>
+
+            )}
           </div>
-        )}
+
+        </div>
+
+        {/* Andamento da denúncia */}
+        {report.statusComment && <div className="space-y-2">
+          <h4 className="font-medium text-gray-900 flex items-center gap-2">
+            <FileText className="w-4 h-4" />
+            Andamento da denúncia
+          </h4>
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-gray-700 whitespace-pre-wrap">
+              {report.statusComment}
+            </p>
+          </div>
+        </div>}
+
+        {/* Motivo da rejeição */}
+        {report.rejectReason && <div className="space-y-2">
+          <h4 className="font-medium text-gray-900 flex items-center gap-2">
+            <FileText className="w-4 h-4" />
+            Motivo da rejeição
+          </h4>
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <p className="text-gray-700 whitespace-pre-wrap">
+              {report.rejectReason}
+            </p>
+          </div>
+        </div>}
       </div>
+
+      {user?.type === UserType.ONG && <div>
+        <label htmlFor="" className='mb-2'>
+          Comentário: <input type="text" name="statusComment" value={statusComment} className="border-2 w-full rounded-sm py-1" onChange={(e) => setStatusComment(e.target.value)} />
+        </label>
+        {statusCommentError && <p className="text-red-600 text-xs text-right">Um comentário é necessário para avançar no status ou concluir a denúncia</p>}
+        <div className='flex gap-2 mt-2'>
+          <Button variant={'secondary'} onClick={() => handleProgress('progress')}>Avançar progresso</Button>
+          <Button variant={'destructive'} onClick={() => handleProgress('unresolved')}>Concluir sem resolução</Button>
+          <Button variant={'secondary'} onClick={() => handleProgress('resolved')} className='bg-green-500 grow'>Concluir</Button>
+        </div>
+      </div >}
     </DialogContent>
   );
 }

@@ -22,6 +22,11 @@ const statusConfig = {
     variant: 'default' as const,
     className: 'bg-green-100 text-green-800 hover:bg-green-200'
   },
+  UNRESOLVED: {
+    label: 'Não resolvida',
+    variant: 'destructive' as const,
+    className: 'bg-red-100 text-red-800 hover:bg-red-200'
+  },
   REJECTED: { 
     label: 'Rejeitada', 
     variant: 'destructive' as const,

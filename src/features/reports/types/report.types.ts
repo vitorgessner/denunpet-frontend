@@ -16,8 +16,11 @@ export interface Report {
     createdAt: Date
     midia: Midia[]
     location: string
+    address: string | null
     status: ReportStatus
+    statusComment: string;
     userId: number
+    rejectReason: string;
     user: {
       id: number;
       name: string;
@@ -29,7 +32,8 @@ export const ReportStatus = {
     UNDER_REVIEW: "UNDER_REVIEW",
     REJECTED: "REJECTED",
     IN_PROGRESS: "IN_PROGRESS",
-    RESOLVED: "RESOLVED"
+    RESOLVED: "RESOLVED",
+    UNRESOLVED: "UNRESOLVED"
 };
 
 export type ReportStatus = typeof ReportStatus[keyof typeof ReportStatus];

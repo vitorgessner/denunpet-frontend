@@ -46,7 +46,8 @@ export function EditReportDialog({ report, setIsOpen, fetchReports }: { report: 
         formData.append("description", data.description)
         formData.append("details", data.details)
         formData.append("ocurrenceDate", new Date(data.ocurrenceDate).toISOString())
-        formData.append("location", report.location)
+        formData.append("location", report.location);
+        formData.append("address", report.address ?? '');
 
         if (data.midia) {
             for (let i = 0; i < data.midia.length; i++) {
@@ -75,6 +76,8 @@ export function EditReportDialog({ report, setIsOpen, fetchReports }: { report: 
         }
 
     }
+
+    const [lat, long] = report.location.split(', ')
 
     return (
         <DialogContent>
@@ -114,17 +117,18 @@ export function EditReportDialog({ report, setIsOpen, fetchReports }: { report: 
                 </div>
 
                 <div className="pt-4 grid grid-cols-1">
-                    {(<MapContainer center={[...report.location.split(', ')]} zoom={13} scrollWheelZoom={true} style={{ height: 400 }}>
+                    {(<MapContainer center={[Number(lat), Number(long)]} zoom={13} scrollWheelZoom={true} style={{ height: 300 }}>
                         <TileLayer
                             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                         />
-                        <Marker position={[...report.location.split(', ')]}>
+                        <Marker position={[Number(lat), Number(long)]}>
                             <Popup>
                                 A pretty CSS3 popup. <br /> Easily customizable.
                             </Popup>
                         </Marker>
                     </MapContainer>)}
+                    {report.address && <p>Endereço: {report.address}</p>}
                 </div>
 
                 <div className="pt-4 grid grid-cols-4">
@@ -133,12 +137,16 @@ export function EditReportDialog({ report, setIsOpen, fetchReports }: { report: 
                 </div>
 
                 <div>
-                    {!display && <h3 className='text-sm'>Imagens atuais</h3>}
-                    {!display && report?.midia && report?.midia.map(item => item.type === "image" ?
+                    {!display && <h3 className='text-sm'>Mídias da denúncia</h3>}
+                    <div className='flex gap-2 flex-wrap'>
+                        {!display && report?.midia && report?.midia.map(item => item.type === "image" ?
 
-                        <img key={item.id} src={`${import.meta.env.VITE_API_URL}${item.url}`} className='h-18 object-cover rounded col-span-1' /> :
-                        <video key={item.id} src={`${import.meta.env.VITE_API_URL}${item.url}`} className='h-18 object-cover rounded col-span-1' ></video>
-                    )}
+
+                            <img key={item.id} src={`${import.meta.env.VITE_API_URL}${item.url}`} className='h-40 object-cover rounded col-span-1' /> :
+                            <video controls={true} key={item.id} src={`${import.meta.env.VITE_API_URL}${item.url}`} className='h-30 object-cover rounded col-span-1' ></video>
+
+                        )}
+                    </div>
 
                 </div>
 

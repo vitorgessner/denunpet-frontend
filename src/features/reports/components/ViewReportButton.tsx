@@ -9,7 +9,7 @@ import type { Report } from "../types/report.types"
 import { ViewReportDetailsDialog } from "./ViewReportDetailsDialog"
 
 
-export const ViewReportButton = ({ report }: { report: Report }) => {
+export const ViewReportButton = ({ report, fetchReports }: { report: Report, fetchReports?: () => Promise<void> }) => {
     const [open, setOpen] = useState(false)
 
     return (<Dialog open={open} onOpenChange={setOpen}>
@@ -17,7 +17,7 @@ export const ViewReportButton = ({ report }: { report: Report }) => {
         <DialogTrigger asChild>
             <Button variant="outline" onClick={() => setOpen(true)}><Eye size={14} /></Button>
         </DialogTrigger>
-        <ViewReportDetailsDialog report={report} />
+        <ViewReportDetailsDialog report={report} fetchReports={fetchReports}/>
 
     </Dialog>
     )

@@ -16,7 +16,8 @@ type reportSchemaProps = {
     details: string,
     ocurrenceDate: Date
     location: string,
-    midia: FileList
+    midia: FileList,
+    anonymous: string,
     user?: User
 }
 
@@ -24,9 +25,11 @@ export function CreateReportDialog({ setIsOpen, fetchReports }: { setIsOpen: Rea
     const { register, handleSubmit, setValue } = useForm<reportSchemaProps>()
     const [loading, setLoading] = useState(false)
     const [, setDisplay] = useState(false);
-    const [hasImage, setHasImage] = useState(true);
+    const [hasImage, setHasImage] = useState(false);
+    const [hasVideo, setHasVideo] = useState(false);
     const [hasLoc, setHasLoc] = useState(true);
     const [coords, setCoords] = useState<null | number[]>(null);
+    const [address, setAddress] = useState('');
     const { user } = useAuth()
 
     useEffect(() => {
@@ -40,13 +43,28 @@ export function CreateReportDialog({ setIsOpen, fetchReports }: { setIsOpen: Rea
         getLocation();
     }, [])
 
+    useEffect(() => {
+        async function getAddress() {
+            if (coords) {
+                const address = await api.get(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${coords[0]}&lon=${coords[1]}&layer=address`);
+                setAddress(address.data.display_name);
+                console.log(address.data)
+            }
+        }
+
+        getAddress();
+    }, [coords])
+
     async function handleCreateReport(data: reportSchemaProps) {
         const formData = new FormData()
         formData.append("description", data.description)
         formData.append("details", data.details)
         formData.append("ocurrenceDate", new Date(data.ocurrenceDate).toISOString())
+        formData.append("anonymous", data.anonymous)
+        console.log(data.anonymous);
         if (coords) {
             formData.append("location", coords.join(', '));
+            formData.append("address", address);
             setHasLoc(true);
         } else {
             setHasLoc(false);
@@ -54,16 +72,17 @@ export function CreateReportDialog({ setIsOpen, fetchReports }: { setIsOpen: Rea
 
         if (data.midia) {
             for (let i = 0; i < data.midia.length; i++) {
-                formData.append("midia", data.midia[i])
+                const file = data.midia[i];
+                formData.append("midia", file)
             }
-            setHasImage(true);
         } else {
             setHasImage(false);
+            setHasVideo(false);
         }
 
         if (user) formData.append("user", JSON.stringify(user))
 
-        if (data.midia && coords) {
+        if (hasImage && hasVideo && coords) {
             try {
                 setLoading(true)
                 await api.post("/api/report/register", formData)
@@ -76,7 +95,6 @@ export function CreateReportDialog({ setIsOpen, fetchReports }: { setIsOpen: Rea
             }
         }
     }
-
     return (
         <DialogContent>
             <DialogHeader className="text-left">
@@ -101,7 +119,7 @@ export function CreateReportDialog({ setIsOpen, fetchReports }: { setIsOpen: Rea
                 </div>
 
                 <div className='pt-4 grid grid-cols-1'>
-                    {coords && (<MapContainer center={[coords[0], coords[1]]} zoom={13} scrollWheelZoom={true} style={{ height: 400 }}>
+                    {coords && (<MapContainer center={[coords[0], coords[1]]} zoom={13} scrollWheelZoom={true} style={{ height: 300 }}>
                         <TileLayer
                             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -112,16 +130,41 @@ export function CreateReportDialog({ setIsOpen, fetchReports }: { setIsOpen: Rea
                             </Popup>
                         </Marker>
                     </MapContainer>)}
+                    {address && <p>Endereço: {address}</p>}
                 </div>
 
                 {!hasLoc && <p className='text-right text-l mt-1 text-red-600'>Localização é obrigatória</p>}
 
                 <div className="pt-4 grid grid-cols-4">
                     <Label htmlFor="midia">Fotos/vídeos</Label>
-                    <Input className="col-span-3" id="midia" multiple type="file" onChange={(e) => setValue("midia", e.target.files as FileList, { shouldValidate: false, })} />
+                    <Input className="col-span-3" id="midia" multiple type="file" onChange={(e) => {
+                        setValue("midia", e.target.files as FileList, { shouldValidate: false })
+                        if (e.target.files) {
+                            setHasImage(false);
+                            setHasVideo(false);
+                            for (let i = 0; i < e.target.files.length; i++) {
+                                const file = e.target.files[i];
+                                if (file.type === 'video/mp4') {
+                                    setHasVideo(true);
+                                }
+                                if (file.type === 'image/jpeg' || file.type === 'image/png') {
+                                    setHasImage(true);
+                                }
+                            }
+                        } else {
+                            setHasImage(false);
+                            setHasVideo(false);
+                        }
+                    }} />
                 </div>
-                {!hasImage && <p className='text-right text-l mt-1 text-red-600'>Precisa de pelo menos uma mídia</p>}
+
+                {!hasImage && <p className='text-right text-l mt-1 text-red-600'>Precisa de pelo menos uma foto</p>}
+                {!hasVideo && <p className='text-right text-l mt-1 text-red-600'>Precisa de pelo menos um vídeo</p>}
                 {loading && <p className='text-right text-xl my-3 text-blue-500'>Carregando...</p>}
+
+                <label htmlFor="anonymous" className='flex items-center gap-2 justify-end'>
+                    <input type='checkbox' id="anonymous" value={'true'} {...register("anonymous")} /> Denúncia anônima?
+                </label>
 
                 <DialogFooter className="flex-row justify-end mt-4">
                     <DialogClose asChild>

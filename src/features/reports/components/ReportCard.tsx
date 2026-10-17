@@ -34,6 +34,10 @@ export const ReportCard = ({ report, fetchReports }: { report: Report, fetchRepo
                     setCount(3)
                     setStatusMessage("Resolvido");
                     break
+                case ReportStatus.UNRESOLVED:
+                    setCount(3)
+                    setStatusMessage("Não resolvido")
+                    break
                 default:
                     setStatusMessage("Desconhecido");
             }
@@ -43,17 +47,16 @@ export const ReportCard = ({ report, fetchReports }: { report: Report, fetchRepo
 
 
 
-    return (<div className="border-1 border-black-50 w-full rounded-md p-4">
-        <div className=" flex justify-between">
-            <div>
-                <h3 className="text-left text-md font-bold">Denúncia nº <span className="font-bold">{report.id}</span></h3>
-                <p className="text-sm font-light">{report.description}</p>
-                <p className="mb-2">Status: {statusMessage}</p>
+    return (<div className="report-card">
+        <div className="report-card-header">
+            <div className="report-card-heading">
+                <h3>Denúncia nº <span>{report.id}</span></h3>
+                <p className="report-card-description">{report.description}</p>
             </div>
 
 
-            <div className="flex gap-2">
-                <ViewReportButton report={report} />
+            <div className="report-card-actions">
+                <ViewReportButton report={report} fetchReports={fetchReports} />
                 {count < 1 && <>
                     {
                         user?.type == UserType.USER
@@ -70,10 +73,12 @@ export const ReportCard = ({ report, fetchReports }: { report: Report, fetchRepo
         </div>
 
 
-        <div className="flex items-center justify-start gap-2 w-full mb-2">
-            {Array.from({ length: 3 }).map((_, index) => <span key={index} className={`h-[4px] w-full bg-accent-foreground ${index + 1 <= count && count != 0 ? "opacity-100" : "opacity-25"}`}> </span>)}
+        <p className="report-status-line">Status: <strong>{statusMessage}</strong></p>
+
+        <div className="report-progress" aria-hidden="true">
+            {Array.from({ length: 3 }).map((_, index) => <span key={index} className={`report-progress-segment ${index + 1 <= count && count != 0 ? "is-active" : ""}`} />)}
         </div>
-        <p>{report.midia.length} {report.midia.length > 1 ? "mídias" : "mídia"}</p>
+        <p className="report-media">{report.midia.length} {report.midia.length > 1 ? "mídias" : "mídia"}</p>
 
     </div>)
 }
